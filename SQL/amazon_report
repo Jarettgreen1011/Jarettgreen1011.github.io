@@ -1,0 +1,43 @@
+CREATE TABLE listings_report_08012024 (
+	Status text,
+	Title text,
+	Seller_SKU text,
+	Product_ID_type text,
+	Product_ID text,
+	Condition text,
+	Quantity text,
+	Your_Price_USD text
+);
+
+COPY public.listings_report_08012024
+FROM 'C:\Users\Public\all_listings_report_08012024.csv'
+CSV HEADER;
+
+SELECT *
+FROM public.listings_report_08012024;
+
+SELECT COUNT(*)
+FROM public.listings_report_08012024;
+
+--find duplicated listings
+SELECT title, product_id, condition, COUNT(title)
+FROM public.listings_report_08012024
+GROUP BY title, product_id, condition
+HAVING COUNT(title) > 1
+ORDER BY COUNT(title) DESC;
+
+--find total number of listings affected
+SELECT SUM(count)
+FROM (SELECT title, product_id, condition, COUNT(title) AS count
+	FROM public.listings_report_08012024
+	GROUP BY title, product_id, condition
+	HAVING COUNT(title) > 1
+	ORDER BY COUNT(title) DESC);
+
+COPY
+	(SELECT title, product_id, condition, COUNT(title)
+	FROM public.listings_report_08012024
+	GROUP BY title, product_id, condition
+	HAVING COUNT(title) > 1
+	ORDER BY COUNT(title) DESC)
+TO 'C:\Users\Public\duplicated_listings_08012024.txt';
