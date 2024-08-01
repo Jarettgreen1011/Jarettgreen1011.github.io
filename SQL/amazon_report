@@ -40,4 +40,5 @@ COPY
 	GROUP BY title, product_id, condition
 	HAVING COUNT(title) > 1
 	ORDER BY COUNT(title) DESC)
-TO 'C:\Users\Public\duplicated_listings_08012024.txt';
+TO 'C:\Users\Public\duplicated_listings_08012024.txt'
+CSV HEADER;
