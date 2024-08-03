@@ -1,5 +1,5 @@
 --Business task: Compile list of duplicated product listings on our Amazon store
---Why: Delete unnecessary duplicates to avoid confusion on customer's end and avoid competing with ourselves on pricing
+--Why: Delete unnecessary duplicates to reduce customer confusion and avoid competing with ourselves on pricing
 
 
 --Step 1: Create table in SQL database to house Amazon's raw .txt business report
