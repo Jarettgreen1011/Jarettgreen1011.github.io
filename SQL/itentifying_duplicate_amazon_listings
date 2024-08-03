@@ -1,3 +1,8 @@
+--Business task: Compile list of duplicated product listings on our Amazon store
+--Why: Delete unnecessary duplicates to avoid confusion on customer's end and avoid competing with ourselves on pricing
+
+
+--Step 1: Create table in SQL database to house Amazon's raw .txt business report
 CREATE TABLE listings_report_08012024 (
 	Status text,
 	Title text,
@@ -9,24 +14,34 @@ CREATE TABLE listings_report_08012024 (
 	Your_Price_USD text
 );
 
+
+--Step 2: Load empty table with data
 COPY public.listings_report_08012024
 FROM 'C:\Users\Public\all_listings_report_08012024.csv'
 CSV HEADER;
 
+
+--Step 3a: Asses if data was loaded properly 
 SELECT *
 FROM public.listings_report_08012024;
 
+
+--Step 3b: Asses if number of rows correlates to number of product listings on Amazon
 SELECT COUNT(*)
 FROM public.listings_report_08012024;
 
---find duplicated listings
+
+--Step 4a: Compile list of duplicated product listings
+	--It was necessary to group by condition or listings with the same title 
+  	  but different conditions (New, Used - Very Good, etc.) would show up as duplicates
 SELECT title, product_id, condition, COUNT(title)
 FROM public.listings_report_08012024
 GROUP BY title, product_id, condition
 HAVING COUNT(title) > 1
 ORDER BY COUNT(title) DESC;
 
---find total number of listings affected
+
+--Step 4 supplement: Identify number of listings that may be affected in next business steps
 SELECT SUM(count)
 FROM (SELECT title, product_id, condition, COUNT(title) AS count
 	FROM public.listings_report_08012024
@@ -34,6 +49,7 @@ FROM (SELECT title, product_id, condition, COUNT(title) AS count
 	HAVING COUNT(title) > 1
 	ORDER BY COUNT(title) DESC);
 
+--Step 5: Export results to be presented in Excel
 COPY
 	(SELECT title, product_id, condition, COUNT(title)
 	FROM public.listings_report_08012024
