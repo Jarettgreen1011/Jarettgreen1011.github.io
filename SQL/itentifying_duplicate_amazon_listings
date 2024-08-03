@@ -31,7 +31,7 @@ SELECT COUNT(*)
 FROM public.listings_report_08012024;
 
 
---Step 4a: Compile list of duplicated product listings
+--Step 4: Compile list of duplicated product listings
 	--It was necessary to group by condition or listings with the same title 
   	  but different conditions (New, Used - Very Good, etc.) would show up as duplicates
 SELECT title, product_id, condition, COUNT(title)
