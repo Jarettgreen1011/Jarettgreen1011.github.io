@@ -89,12 +89,13 @@ COPY public.amazon_shipping_costs_july
 FROM 'C:\Users\Public\amazon_shipping_costs_july.csv'
 CSV HEADER;
 
-
-
-
+--Calculate Amazons cut
+SELECT (SUM(refferal_fee_total) / (SUM(refferal_fee_total) + SUM(net_proceeds_total))) * 100
+FROM public.amazon_fees_and_proceeds_july;
 
 --Calculate shipping costs on amazon
 SELECT COUNT(DISTINCT amazon_order_id) * 7 --average cost to ship (approximation)
 FROM public.amazon_shipping_costs_july;
+
 
 
