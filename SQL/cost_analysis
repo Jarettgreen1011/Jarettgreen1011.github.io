@@ -19,7 +19,7 @@ WITh insertion_fee AS
 	LEFT JOIN ebay_listing_sales_report_july_2024
 	ON ebay_all_listings_08_15_2024.title = ebay_listing_sales_report_july_2024.title)
 
-SELECT ((SUM(total_selling_costs) - SUM(shipping_labels_cost) + (SELECT * FROM insertion_fee)) / (SUM(item_sales) - SUM(shipping_labels_cost))) * 100 
+SELECT ((SUM(total_selling_costs) - SUM(shipping_labels_cost) + (SELECT insertion_fee FROM insertion_fee)) / (SUM(item_sales) - SUM(shipping_labels_cost))) * 100 
 FROM public.ebay_listing_sales_report_july_2024;
 
 --Calculate ebays shipping cost as a percentage out of the total sales
