@@ -1,3 +1,175 @@
+--AMAZON--
+--Calculate Amazons cut as a percentage out of total sales
+SELECT (SUM(refferal_fee_total) / (SUM(refferal_fee_total) + SUM(net_proceeds_total))) * 100
+FROM public.amazon_fees_and_proceeds_july_2024;
+
+--Calculate Amazons shipping cost as a percentage out of total sales 
+WITH shipping_cost AS 
+	SELECT COUNT(DISTINCT amazon_order_id) * 7 --average cost to ship (approximation)
+	FROM public.amazon_orders_july_2024
+	WHERE order_status NOT LIKE 'Cancelled';
+(go back to this, query to get total)
+SELECT SUM(item_price)
+FROM public.amazon_orders_july_2024
+WHERE order_status NOT LIKE 'Cancelled';
+
+--EBAY
+--Calculate ebays cut as a percentage of total sales
+--total_selling_costs - shipping_labels_cost = ebay_fee
+--item sales includes the cost of shipping label which is provided by business and is not repesentative of total_sale, business has 'free shipping' for customers
+SELECT ((SUM(total_selling_costs) - SUM(shipping_labels_cost)) / (SUM(item_sales) - SUM(shipping_labels_cost))) * 100 
+FROM public.ebay_listing_sales_report_july_2024;
+
+--Calculate ebays shipping cost as a percentage out of the total sales
+--item sales includes the cost of shipping label which is provided by business and is not repesentative of total_sale, business has 'free shipping' for customers
+SELECT (SUM(shipping_labels_cost) / (SUM(item_sales) - SUM(shipping_labels_cost))) * 100
+FROM public.ebay_listing_sales_report_july_2024;
+
+
+
+-- question about duplicated order ids for orders with multiple items 
+-- examine data on orders consisting of multiple items (hence multiple entries)
+SELECT *
+FROM public.amazon_orders_july_2024
+WHERE amazon_order_id IN
+	(SELECT amazon_order_id
+	FROM public.amazon_orders_july_2024
+	GROUP BY amazon_order_id
+	HAVING COUNT(amazon_order_id) > 1);
+
+
+
+
+APPENDIX 
+--Create ebay all listings table
+CREATE TABLE ebay_all_listings_08_15_2024 (
+	title text,
+	custom_label text,
+	available_quantity smallint,
+	start_price float,
+	current_price float,
+	sold_quantity smallint,
+	start_date timestamp,
+	condition text
+);
+
+	--populate ebay all listings table
+COPY public.ebay_all_listings_08_15_2024
+FROM 'C:\Users\Public\ebay_all_listings_08_15_2024.csv'
+CSV HEADER;
+
+		--inspect import to ebay all listings table
+SELECT *
+FROM public.ebay_all_listings_08_15_2024;
+
+--create ebay orders table 
+CREATE TABLE ebay_listings_sales_report_july_2024 (
+	listing_title text,
+	quantity_sold smallint,
+	total_sales_including_taxes float,
+	item_sales float,
+	taxes float,
+	total_selling_costs float,
+	shipping_labels_cost float,
+	net_proceeds float,
+	average_selling_price float
+);
+
+	--populate ebay orders table
+COPY public.ebay_listing_sales_report_july_2024
+FROM 'C:\Users\Public\ebay_listing_sales_report_july_2024.csv'
+CSV HEADER;
+
+		--inspect import to ebay orders table
+SELECT *
+FROM public.ebay_listing_sales_report_july_2024;
+
+--create amazon orders table
+CREATE TABLE amazon_orders_july_2024 (
+	amazon_order_id text,
+	purchase_date timestamp,
+	order_status text,
+	product_name text,
+	sku text,
+	asin text,
+	item_status text,
+	quantity smallint,
+	currency text,
+	item_price float,
+	item_tax float,
+	ship_city text,
+	ship_state text,
+	ship_postal_code text,
+	ship_country text
+);
+	--populate amazon orders table
+COPY public.amazon_orders_july_2024
+FROM 'C:\Users\Public\amazon_orders_july_2024.csv'
+CSV HEADER;
+
+		--inspect import to amazon orders table 
+SELECT *
+FROM public.amazon_orders_july_2024;
+
+--create amazon cut table 
+CREATE TABLE amazon_fees_and_proceeds_july_2024 (
+	asin text,
+	refferal_fee_total float,
+	net_proceeds_total float
+);
+
+	--populate amazon cut table
+COPY public.amazon_fees_and_proceeds_july_2024
+FROM 'C:\Users\Public\amazon_fees_and_proceeds_july_2024.csv'
+CSV HEADER;
+
+			--inspect import amazon cut table 
+SELECT *
+FROM public.amazon_fees_and_proceeds_july_2024;
+
+--create amazon daily sales table 
+CREATE TABLE amazon_daily_sales_july_2024 (
+	date date,
+	ordered_product_sales float,
+	units_ordered smallint,
+	average_selling_price float
+);
+
+	--populate amazon daily sales table 
+COPY public.amazon_daily_sales_july_2024
+FROM 'C:\Users\Public\amazon_daily_sales_july_2024.csv'
+CSV HEADER;
+
+		--inspect import to amazon daily sales table
+SELECT *
+FROM public.amazon_daily_sales_july_2024;
+
+--create amazon listings sold table
+CREATE TABLE amazon_listings_sold_july_2024 (
+	asin text,
+	title text,
+	sku text, 
+	units_ordered smallint,
+	ordered_product_sales float
+);
+
+	--populate amazon listings sold table
+COPY public.amazon_listings_sold_july_2024
+FROM 'C:\Users\Public\amazon_listings_sold_july_2024.csv'
+CSV HEADER;
+
+		-inspect amazon listings sold table
+SELECT *
+FROM public.amazon_listings_sold_july_2024;
+
+
+
+
+
+
+
+
+OLD
 --Gathering eBay listings data
 CREATE TABLE ebay_all_listings_08152024 (
 	title text,
