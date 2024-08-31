@@ -4,20 +4,22 @@ SELECT (SUM(refferal_fee_total) / (SUM(refferal_fee_total) + SUM(net_proceeds_to
 FROM public.amazon_fees_and_proceeds_july_2024;
 
 --Calculate Amazons shipping cost as a percentage out of total sales 
-WITH shipping_cost AS 
-	SELECT COUNT(DISTINCT amazon_order_id) * 7 --average cost to ship (approximation)
-	FROM public.amazon_orders_july_2024
-	WHERE order_status NOT LIKE 'Cancelled';
-(go back to this, query to get total)
-SELECT SUM(item_price)
+SELECT ((COUNT(DISTINCT amazon_order_id) * 7) / SUM(item_price)) * 100 --7 here is approximate cost per shipping label
 FROM public.amazon_orders_july_2024
 WHERE order_status NOT LIKE 'Cancelled';
 
---EBAY
+--EBAY--
 --Calculate ebays cut as a percentage of total sales
---total_selling_costs - shipping_labels_cost = ebay_fee
+--total_selling_costs - shipping_labels_cost = final_value fee
+--final_value fee + insertion fee = ebay's cut
 --item sales includes the cost of shipping label which is provided by business and is not repesentative of total_sale, business has 'free shipping' for customers
-SELECT ((SUM(total_selling_costs) - SUM(shipping_labels_cost)) / (SUM(item_sales) - SUM(shipping_labels_cost))) * 100 
+WITh insertion_fee AS
+	(SELECT ((COUNT(*) - 250) * 0.05) AS insertion_fee --first 250 are free
+	FROM ebay_all_listings_08_15_2024
+	LEFT JOIN ebay_listing_sales_report_july_2024
+	ON ebay_all_listings_08_15_2024.title = ebay_listing_sales_report_july_2024.title)
+
+SELECT ((SUM(total_selling_costs) - SUM(shipping_labels_cost) + (SELECT * FROM insertion_fee)) / (SUM(item_sales) - SUM(shipping_labels_cost))) * 100 
 FROM public.ebay_listing_sales_report_july_2024;
 
 --Calculate ebays shipping cost as a percentage out of the total sales
@@ -161,115 +163,3 @@ CSV HEADER;
 		-inspect amazon listings sold table
 SELECT *
 FROM public.amazon_listings_sold_july_2024;
-
-
-
-
-
-
-
-
-OLD
---Gathering eBay listings data
-CREATE TABLE ebay_all_listings_08152024 (
-	title text,
-	custom_label text,
-	available_quantity smallint,
-	start_price float,
-	current_price float,
-	sold_quantity smallint,
-	start_date timestamp,
-	condition text
-);
-
-COPY public.ebay_all_listings_08152024
-FROM 'C:\Users\Public\eBay all listings 08152024.csv'
-CSV HEADER;
-
-SELECT *
-FROM public.ebay_all_listings_08152024;
-
---Gathering eBay sales and costs data
-CREATE TABLE ebay_fees_and_proceeds_july (
-	listing_title text,
-	quantity_sold smallint,
-	item_sales float,
-	total_selling_costs float,
-	shipping_labels_cost float,
-	average_selling_price float
-);
-
-COPY public.ebay_fees_and_proceeds_july
-FROM 'C:\Users\Public\ebay_fees_and_proceeds_july.csv'
-CSV HEADER;
-
-SELECT *
-FROM public.ebay_fees_and_proceeds_july;
-
---Gathering Amazon sales and costs data 
-CREATE TABLE amazon_fees_and_proceeds_july (
-	asin text,
-	refferal_fee_total float,
-	net_proceeds_total float
-);
-
-COPY public.amazon_fees_and_proceeds_july
-FROM 'C:\Users\Public\amazon_fees_and_proceeds_july.csv'
-CSV HEADER;
-
-SELECT *
-FROM public.amazon_fees_and_proceeds_july;
-
-CREATE TABLE amazon_shipping_costs_july (
-	amazon_order_id text,
-	merchant_order_id text,
-	purchase_date text,
-	last_updated_date text,
-	order_status text,
-	fulfillment_channel text,
-	sales_channel text,
-	order_channel text,
-	url text,
-	ship_service_level text,
-	product_name text,
-	sku text,
-	asin text,
-	item_status text,
-	quantity smallint,
-	currency text,
-	item_price float,
-	item_tax float,
-	shipping_price float,
-	shipping_tax float,
-	gift_wrap_price float,
-	gift_wrap_tax float,
-	item_promotion_discount text,
-	ship_promotion_discount text,
-	ship_city text,
-	ship_state text,
-	ship_postal_code text,
-	ship_country text,
-	promotion_ids text,
-	cpf text,
-	is_business_order text,
-	purchase_order_number text,
-	price_designation text,
-	signature_confirmation_recommended text
-	);
-
-COPY public.amazon_shipping_costs_july
-FROM 'C:\Users\Public\amazon_shipping_costs_july.csv'
-CSV HEADER;
-
---Calculate Amazons cut as a percentage (CAVEAT: this number is not reliable as a true total but is useful for finding a percentage 
-as amazon reports only provide information on listings with an asin, items without an asin are not included in report, hence the percentage)
-SELECT (SUM(refferal_fee_total) / (SUM(refferal_fee_total) + SUM(net_proceeds_total))) * 100
-FROM public.amazon_fees_and_proceeds_july;
-
---Calculate shipping costs on amazon as a percentage (CAVEAT: this number is not reliable as a true total but is useful for finding a percentage 
-as amazon reports only provide information on listings with an asin, items without an asin are not included in report, hence the percentage)
-SELECT COUNT(DISTINCT amazon_order_id) * 7 --average cost to ship (approximation)
-FROM public.amazon_shipping_costs_july;
-
-
-
