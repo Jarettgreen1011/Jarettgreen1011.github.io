@@ -1,3 +1,156 @@
+Table of contents
+1. Business task
+
+2. Analysis 
+   2a. Calculate selling fees as a percentage of total sales for each platform
+   2b. Calculate shipping costs as a percentage of total sales for each platform
+
+3. Results
+   3a. Selling fees
+   3b. Shipping costs
+
+4. Assumptions and limitations
+
+5. Appendix
+   5aa. Create ebay_all_listings_08_15_2024 table
+      5ab. Populate ebay_all_listings_08_15_2024 table
+         5ac. Inspect import to ebay_all_listings_08_15_2024 table
+   5ba. Create ebay_listings_sales_report_july_2024 table 
+      5bb. Populate ebay_listings_sales_report_july_2024 table
+         5bc. Inspect import to ebay_listings_sales_report_july_2024 table
+   5ca. Create amazon_fees_and_proceeds_july_2024 table
+      5cb. Populate amazon_fees_and_proceeds_july_2024 table
+         5cc. Inspect import to amazon_fees_and_proceeds_july_2024 table
+   5da. Create amazon_orders_july_2024 table 
+      5db. Populate amazon_orders_july_2024 table
+         5dc. Inspect import to amazon_orders_july_2024 table
+
+Report
+1. Business task: Compare and contrast cost of using Amazon vs. eBay as selling platforms using July 2024 sales as a sample
+
+2. Analysis
+2a. Calculate selling fees as a percentage of total sales for each platform
+--Amazon
+SELECT (SUM(refferal_fee_total) / (SUM(refferal_fee_total) + SUM(net_proceeds_total))) * 100
+FROM public.amazon_fees_and_proceeds_july_2024;
+
+--eBay
+WITh insertion_fee AS
+	(SELECT ((COUNT(*) - 250) * 0.05) AS insertion_fee --first 250 are free
+	FROM ebay_all_listings_08_15_2024
+	LEFT JOIN ebay_listing_sales_report_july_2024
+	ON ebay_all_listings_08_15_2024.title = ebay_listing_sales_report_july_2024.title)
+
+SELECT ((SUM(total_selling_costs) - SUM(shipping_labels_cost) + (SELECT insertion_fee FROM insertion_fee)) / (SUM(item_sales) - SUM(shipping_labels_cost))) * 100 
+FROM public.ebay_listing_sales_report_july_2024;
+
+2b. Calculate shipping costs as a percentage of total sales for each platfrom
+--Amazon
+SELECT ((COUNT(DISTINCT amazon_order_id) * 7) / SUM(item_price)) * 100
+FROM public.amazon_orders_july_2024
+WHERE order_status NOT LIKE 'Cancelled';
+
+--eBay
+SELECT (SUM(shipping_labels_cost) / (SUM(item_sales) - SUM(shipping_labels_cost))) * 100
+FROM public.ebay_listing_sales_report_july_2024;
+
+3. Results: 
+3a. Selling fees
+3b. Shipping costs
+
+4. Assumptions and limitations: 
+
+5. Appendix
+5aa. Create ebay_all_listings_08_15_2024 table
+CREATE TABLE ebay_all_listings_08_15_2024 (
+	title text,
+	custom_label text,
+	available_quantity smallint,
+	start_price float,
+	current_price float,
+	sold_quantity smallint,
+	start_date timestamp,
+	condition text
+);
+
+5ab. Populate ebay_all_listings_08_15_2024 table
+COPY public.ebay_all_listings_08_15_2024
+FROM 'C:\Users\Public\ebay_all_listings_08_15_2024.csv'
+CSV HEADER;
+
+5ac. Inspect import to ebay_all_listings_08_15_2024 table
+SELECT *
+FROM public.ebay_all_listings_08_15_2024;
+
+5ba. Create ebay_listings_sales_report_july_2024 table 
+CREATE TABLE ebay_listings_sales_report_july_2024 (
+	listing_title text,
+	quantity_sold smallint,
+	total_sales_including_taxes float,
+	item_sales float,
+	taxes float,
+	total_selling_costs float,
+	shipping_labels_cost float,
+	net_proceeds float,
+	average_selling_price float
+);
+
+5bb. Populate ebay_listings_sales_report_july_2024 table
+COPY public.ebay_listing_sales_report_july_2024
+FROM 'C:\Users\Public\ebay_listing_sales_report_july_2024.csv'
+CSV HEADER;
+
+5bc. Inspect import to ebay_listings_sales_report_july_2024 table
+SELECT *
+FROM public.ebay_listing_sales_report_july_2024;
+
+5ca. Create amazon_fees_and_proceeds_july_2024 table
+CREATE TABLE amazon_fees_and_proceeds_july_2024 (
+	asin text,
+	refferal_fee_total float,
+	net_proceeds_total float
+);
+
+5cb. Populate amazon_fees_and_proceeds_july_2024 table
+COPY public.amazon_fees_and_proceeds_july_2024
+FROM 'C:\Users\Public\amazon_fees_and_proceeds_july_2024.csv'
+CSV HEADER;
+
+5cc. Inspect import to amazon_fees_and_proceeds_july_2024 table
+SELECT *
+FROM public.amazon_fees_and_proceeds_july_2024;
+
+5da. Create amazon_orders_july_2024 table 
+CREATE TABLE amazon_orders_july_2024 (
+	amazon_order_id text,
+	purchase_date timestamp,
+	order_status text,
+	product_name text,
+	sku text,
+	asin text,
+	item_status text,
+	quantity smallint,
+	currency text,
+	item_price float,
+	item_tax float,
+	ship_city text,
+	ship_state text,
+	ship_postal_code text,
+	ship_country text
+);
+
+5db. Populate amazon_orders_july_2024 table
+COPY public.amazon_orders_july_2024
+FROM 'C:\Users\Public\amazon_orders_july_2024.csv'
+CSV HEADER;
+
+5dc. Inspect import to amazon_orders_july_2024 table
+SELECT *
+FROM public.amazon_orders_july_2024;
+
+
+-------------------------------------------------------------------------------------------------------------
+
 --AMAZON--
 --Calculate Amazons cut as a percentage out of total sales
 SELECT (SUM(refferal_fee_total) / (SUM(refferal_fee_total) + SUM(net_proceeds_total))) * 100
