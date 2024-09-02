@@ -24,17 +24,20 @@ Table of contents
    5da. Create amazon_orders_july_2024 table 
       5db. Populate amazon_orders_july_2024 table
          5dc. Inspect import to amazon_orders_july_2024 table
+   5ea. Create amazon_daily_sales_july_2024 table
+      5eb. Populate amazon_daily_sales_july_2024 table
+         5ec. Inspect import to amazon_daily_sales_july_2024 table
 
 Report
 1. Business task: Compare and contrast cost of using Amazon vs. eBay as selling platforms using July 2024 sales as a sample
 
 2. Analysis
 2a. Calculate selling fees as a percentage of total sales for each platform
---Amazon
+-- Amazon
 SELECT (SUM(refferal_fee_total) / (SUM(refferal_fee_total) + SUM(net_proceeds_total))) * 100
 FROM public.amazon_fees_and_proceeds_july_2024;
 
---eBay
+-- eBay (selling fees consist of an insertion fee and a percentage of every order)
 WITh insertion_fee AS
 	(SELECT ((COUNT(*) - 250) * 0.05) AS insertion_fee --first 250 are free
 	FROM ebay_all_listings_08_15_2024
@@ -44,13 +47,39 @@ WITh insertion_fee AS
 SELECT ((SUM(total_selling_costs) - SUM(shipping_labels_cost) + (SELECT insertion_fee FROM insertion_fee)) / (SUM(item_sales) - SUM(shipping_labels_cost))) * 100 
 FROM public.ebay_listing_sales_report_july_2024;
 
+-- Question about data
+-- What does item_sales column consist of?
+-- Result: item_sales = net_proceeds + total_selling_costs
+-- total_selling_costs = shipping_labels_cost + what eBay calls it's 'final value fee'
+-- Use: Must deduct shipping_labels_cost from total sales because we are providing that and not the customer
+SELECT (net_proceeds + total_selling_costs - shipping_labels_cost) AS item_sales_no_ship,
+	(net_proceeds + total_selling_costs) AS item_sales_w_ship,
+	item_sales
+FROM public.ebay_listing_sales_report_july_2024;
+
 2b. Calculate shipping costs as a percentage of total sales for each platfrom
---Amazon
+-- Amazon
 SELECT ((COUNT(DISTINCT amazon_order_id) * 7) / SUM(item_price)) * 100
 FROM public.amazon_orders_july_2024
 WHERE order_status NOT LIKE 'Cancelled';
 
---eBay
+-- Question about data:
+-- amazon_orders_july_2024 table contains duplicated order ids because orders are partitioned by item and orders often contain different items
+-- item_price did not correctly represent the true price of the item but rather represented the true price * quantity ordered
+-- Because of this discrepancy, I gathered all rows with duplicated order ids 
+   to see whether the item_price was the true price of that one item * the quantity ordered 
+   or if it was simply the sum of all item's true prices * the quantity ordered 
+-- Result: Each unique row/item per order contained its true price * quantity ordered
+-- Use: Safe to use SUM(item_price) to represent total sales
+SELECT *
+FROM public.amazon_orders_july_2024
+WHERE amazon_order_id IN
+	(SELECT amazon_order_id
+	FROM public.amazon_orders_july_2024
+	GROUP BY amazon_order_id
+	HAVING COUNT(amazon_order_id) > 1);
+
+-- eBay
 SELECT (SUM(shipping_labels_cost) / (SUM(item_sales) - SUM(shipping_labels_cost))) * 100
 FROM public.ebay_listing_sales_report_july_2024;
 
@@ -59,6 +88,35 @@ FROM public.ebay_listing_sales_report_july_2024;
 3b. Shipping costs
 
 4. Assumptions and limitations: 
+4a. Amazon's problem with ASINs
+-- Amazon has a problem with reporting on items with missing ASINs and this only seems to occur with some of their reports. 
+-- The amazon_fees_and_proceeds_july_2024 table purportedly contains all our listings 
+   but, the total number of rows is about half of that number, which is why I chose to look at percentages as opposed to 
+   actual values, besides its benefits when comparing two differing datasets (Amazon and eBay). 
+-- This problem was discovered during a different analysis and required the composition of a special report by Amazon 
+   that actually composed of all our listings. When comparing this special report to other Amazon reports that failed 
+   to capture all listings but purported to, the missing listings always contained a missing ASIN. 
+-- To ensure that the amazon_orders_july_2024 table, which contains an ASIN column, was not missing rows, I compared 
+   the calculated total sales value using this table to amazon_daily_sales_july_2024, which is a table that does not
+   include specific items and their ASINs 
+-- Result: The amazon_orders_july_2024 report/table was not affected by the ASIN problem discussed above 
+WITH total_sales_1 AS 
+	(SELECT SUM(ordered_product_sales) AS total_sales_1
+	FROM public.amazon_daily_sales_july_2024),
+total_sales_2 AS 
+	(SELECT SUM(item_price) AS total_sales_2
+	FROM public.amazon_orders_july_2024
+	WHERE order_status NOT LIKE 'Cancelled')
+
+SELECT total_sales_1 AS total_sales_comp
+FROM total_sales_1
+UNION
+SELECT total_sales_2
+FROM total_sales_2;
+
+4b. Amazon's missing data on shipping labels
+-- Amazon does not provide a report with data on the cost of shipping labels purchased by the business for the customer
+-- The number 7 is used as the approximate average cost of shipping labels per order as supplied by business owner 
 
 5. Appendix
 5aa. Create ebay_all_listings_08_15_2024 table
@@ -148,6 +206,22 @@ CSV HEADER;
 SELECT *
 FROM public.amazon_orders_july_2024;
 
+5ea. Create amazon_daily_sales_july_2024 table
+CREATE TABLE amazon_daily_sales_july_2024 (
+	date date,
+	ordered_product_sales float,
+	units_ordered smallint,
+	average_selling_price float
+);
+
+5eb. Populate amazon_daily_sales_july_2024 table
+COPY public.amazon_daily_sales_july_2024
+FROM 'C:\Users\Public\amazon_daily_sales_july_2024.csv'
+CSV HEADER;
+
+5ec. Inspect import to amazon_daily_sales_july_2024 table
+SELECT *
+FROM public.amazon_daily_sales_july_2024;
 
 -------------------------------------------------------------------------------------------------------------
 
@@ -182,8 +256,13 @@ FROM public.ebay_listing_sales_report_july_2024;
 
 
 
--- question about duplicated order ids for orders with multiple items 
--- examine data on orders consisting of multiple items (hence multiple entries)
+-- amazon_orders_july_2024 table contains duplicated order ids because orders are partitioned by item and orders often contain different items
+-- item_price did not correctly represent the price of the item but rather represented the true price * quantity ordered
+-- Because of this discrepancy I gathered all rows with duplicated order_ids 
+   to see whether the item_price was the true price of that one item * the quantity ordered 
+   or if it was simply the sum of all item's prices * the quantity ordered 
+-- Result: each unique item per order contained their unique true price * quantity ordered
+   so it was save to use SUM(item_price) to represent total sales
 SELECT *
 FROM public.amazon_orders_july_2024
 WHERE amazon_order_id IN
