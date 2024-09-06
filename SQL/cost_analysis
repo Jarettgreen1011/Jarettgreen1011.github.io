@@ -13,6 +13,7 @@ Table of contents
 4. Assumptions and limitations
    4a. Amazon's problem with ASINs
    4b. Amazon's missing data on shipping labels
+   4c. Insertion fee total
 
 5. Appendix - Table creation
    5aa. Create ebay_all_listings_08_15_2024 table
