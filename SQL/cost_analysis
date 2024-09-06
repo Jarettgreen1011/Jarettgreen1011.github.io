@@ -3,6 +3,7 @@ Table of contents
 
 2. Analysis 
    2a. Calculate selling fees as a percentage of total sales for each platform
+      2aa. Bonus: Calculate all time insertion fees collected by eBay
    2b. Calculate shipping costs as a percentage of total sales for each platform
 
 3. Results
@@ -10,6 +11,8 @@ Table of contents
    3b. Shipping costs
 
 4. Assumptions and limitations
+   4a. Amazon's problem with ASINs
+   4b. Amazon's missing data on shipping labels
 
 5. Appendix - Table creation
    5aa. Create ebay_all_listings_08_15_2024 table
@@ -54,6 +57,22 @@ SELECT (net_proceeds + total_selling_costs - shipping_labels_cost) AS item_sales
 	(net_proceeds + total_selling_costs) AS item_sales_w_ship,
 	item_sales
 FROM ebay_listing_sales_report_july_2024;
+
+2aa. Bonus: Calculate all time insertion fees collected by eBay
+-- Create table with summary statistics on each listing 
+SELECT *
+INTO insertion_fee_total
+FROM
+	(SELECT title, 
+		((DATE_PART('year', now()::date) - DATE_PART('year', start_date::date)) * 12) + 
+		(DATE_PART('month', now()::date) - DATE_PART('month', start_date::date)) AS months_up,
+		(((DATE_PART('year', now()::date) - DATE_PART('year', start_date::date)) * 12) + 
+		(DATE_PART('month', now()::date) - DATE_PART('month', start_date::date))) * .05 AS total_cost
+	FROM ebay_all_listings_08_15_2024);
+
+-- Calculate sum of insertion fees spent on each listing given that eBay provides the first 250 per month for free
+SELECT SUM(total_cost) - ((MAX(months_up) * 250) * .05)
+FROM insertion_fee_total;
 
 2b. Calculate shipping costs as a percentage of total sales for each platfrom
 -- Amazon
@@ -126,6 +145,18 @@ FROM total_sales_2;
 4b. Amazon's missing data on shipping labels
 -- Amazon does not provide a report with data on the cost of shipping labels purchased by the business for the customer
 -- The number 7 is used as the approximate average cost of shipping labels per order as supplied by business owner 
+
+4c. Insertion fee total
+-- While the number of listings up at MAX(months_up) in the insertion_fee_total is below 250, 
+   meaning they would have been free given eBay's current insertion fee policy providing 
+   250 listings per month for free, the true total spent on insertion fees is likely still higher
+   than the number calculated as listings that have been deleted from eBay's site map over time 
+   do not appear in the ebay_all_listings_08_15_2024 table 
+SELECT COUNT(months_up) 
+FROM public.insertion_fee_total
+WHERE months_up IN 
+	(SELECT MAX(months_up)
+	FROM insertion_fee_total);
 
 5. Appendix
 5aa. Create ebay_all_listings_08_15_2024 table
