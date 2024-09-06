@@ -114,7 +114,9 @@ WHERE shipping_labels_cost = 0;
 
 3. Results: 
 3a. Selling fees
+-- The selling fees as a percentage of total sales are cheaper on eBay than on Amazon
 3b. Shipping costs
+-- The cost of shipping as a percentage of total sales are cheaper on eBay than on Amazon
 
 4. Assumptions and limitations: 
 4a. Amazon's problem with ASINs
