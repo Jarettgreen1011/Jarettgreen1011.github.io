@@ -11,7 +11,7 @@ Table of contents
 
 4. Assumptions and limitations
 
-5. Appendix
+5. Appendix - Table creation
    5aa. Create ebay_all_listings_08_15_2024 table
       5ab. Populate ebay_all_listings_08_15_2024 table
          5ac. Inspect import to ebay_all_listings_08_15_2024 table
@@ -35,19 +35,17 @@ Report
 2a. Calculate selling fees as a percentage of total sales for each platform
 -- Amazon
 SELECT (SUM(refferal_fee_total) / (SUM(refferal_fee_total) + SUM(net_proceeds_total))) * 100
-FROM public.amazon_fees_and_proceeds_july_2024;
+FROM amazon_fees_and_proceeds_july_2024;
 
 -- eBay (selling fees consist of an insertion fee and a percentage of every order)
 WITh insertion_fee AS
 	(SELECT ((COUNT(*) - 250) * 0.05) AS insertion_fee --first 250 are free
-	FROM ebay_all_listings_08_15_2024
-	LEFT JOIN ebay_listing_sales_report_july_2024
-	ON ebay_all_listings_08_15_2024.title = ebay_listing_sales_report_july_2024.title)
+	FROM ebay_all_listings_08_15_2024)
 
 SELECT ((SUM(total_selling_costs) - SUM(shipping_labels_cost) + (SELECT insertion_fee FROM insertion_fee)) / (SUM(item_sales) - SUM(shipping_labels_cost))) * 100 
-FROM public.ebay_listing_sales_report_july_2024;
+FROM ebay_listing_sales_report_july_2024;
 
--- Question about data
+-- Question about data:
 -- What does item_sales column consist of?
 -- Result: item_sales = net_proceeds + total_selling_costs
 -- total_selling_costs = shipping_labels_cost + what eBay calls it's 'final value fee'
@@ -55,12 +53,12 @@ FROM public.ebay_listing_sales_report_july_2024;
 SELECT (net_proceeds + total_selling_costs - shipping_labels_cost) AS item_sales_no_ship,
 	(net_proceeds + total_selling_costs) AS item_sales_w_ship,
 	item_sales
-FROM public.ebay_listing_sales_report_july_2024;
+FROM ebay_listing_sales_report_july_2024;
 
 2b. Calculate shipping costs as a percentage of total sales for each platfrom
 -- Amazon
 SELECT ((COUNT(DISTINCT amazon_order_id) * 7) / SUM(item_price)) * 100
-FROM public.amazon_orders_july_2024
+FROM amazon_orders_july_2024
 WHERE order_status NOT LIKE 'Cancelled';
 
 -- Question about data:
@@ -72,7 +70,7 @@ WHERE order_status NOT LIKE 'Cancelled';
 -- Result: Each unique row/item per order contained its true price * quantity ordered
 -- Use: Safe to use SUM(item_price) to represent total sales
 SELECT *
-FROM public.amazon_orders_july_2024
+FROM amazon_orders_july_2024
 WHERE amazon_order_id IN
 	(SELECT amazon_order_id
 	FROM public.amazon_orders_july_2024
@@ -81,7 +79,18 @@ WHERE amazon_order_id IN
 
 -- eBay
 SELECT (SUM(shipping_labels_cost) / (SUM(item_sales) - SUM(shipping_labels_cost))) * 100
-FROM public.ebay_listing_sales_report_july_2024;
+FROM ebay_listing_sales_report_july_2024;
+
+-- Question about the data:
+-- While eBay does report shipping_labels_cost, they also partition their report by item
+-- eBay does not include an order id in their report so it is guesswork as to what items consist of the same order
+-- Because of this I looked at whether every item consists of a shipping_labels_cost entry as that would show that there are duplicates
+-- Result: Missing shipping_labels_cost data certain items 
+   can be inferred to mean that shipping_labels_cost is not duplicated for orders consisting of multiple items
+-- Use: Safe to use SUM(shipping_labels_cost) as total shipping_labels_cost
+SELECT COUNT(shipping_labels_cost)
+FROM ebay_listing_sales_report_july_2024
+WHERE shipping_labels_cost = 0;
 
 3. Results: 
 3a. Selling fees
@@ -102,10 +111,10 @@ FROM public.ebay_listing_sales_report_july_2024;
 -- Result: The amazon_orders_july_2024 report/table was not affected by the ASIN problem discussed above 
 WITH total_sales_1 AS 
 	(SELECT SUM(ordered_product_sales) AS total_sales_1
-	FROM public.amazon_daily_sales_july_2024),
+	FROM amazon_daily_sales_july_2024),
 total_sales_2 AS 
 	(SELECT SUM(item_price) AS total_sales_2
-	FROM public.amazon_orders_july_2024
+	FROM amazon_orders_july_2024
 	WHERE order_status NOT LIKE 'Cancelled')
 
 SELECT total_sales_1 AS total_sales_comp
@@ -132,13 +141,13 @@ CREATE TABLE ebay_all_listings_08_15_2024 (
 );
 
 5ab. Populate ebay_all_listings_08_15_2024 table
-COPY public.ebay_all_listings_08_15_2024
+COPY ebay_all_listings_08_15_2024
 FROM 'C:\Users\Public\ebay_all_listings_08_15_2024.csv'
 CSV HEADER;
 
 5ac. Inspect import to ebay_all_listings_08_15_2024 table
 SELECT *
-FROM public.ebay_all_listings_08_15_2024;
+FROM ebay_all_listings_08_15_2024;
 
 5ba. Create ebay_listings_sales_report_july_2024 table 
 CREATE TABLE ebay_listings_sales_report_july_2024 (
@@ -154,13 +163,13 @@ CREATE TABLE ebay_listings_sales_report_july_2024 (
 );
 
 5bb. Populate ebay_listings_sales_report_july_2024 table
-COPY public.ebay_listing_sales_report_july_2024
+COPY ebay_listing_sales_report_july_2024
 FROM 'C:\Users\Public\ebay_listing_sales_report_july_2024.csv'
 CSV HEADER;
 
 5bc. Inspect import to ebay_listings_sales_report_july_2024 table
 SELECT *
-FROM public.ebay_listing_sales_report_july_2024;
+FROM ebay_listing_sales_report_july_2024;
 
 5ca. Create amazon_fees_and_proceeds_july_2024 table
 CREATE TABLE amazon_fees_and_proceeds_july_2024 (
@@ -170,13 +179,13 @@ CREATE TABLE amazon_fees_and_proceeds_july_2024 (
 );
 
 5cb. Populate amazon_fees_and_proceeds_july_2024 table
-COPY public.amazon_fees_and_proceeds_july_2024
+COPY amazon_fees_and_proceeds_july_2024
 FROM 'C:\Users\Public\amazon_fees_and_proceeds_july_2024.csv'
 CSV HEADER;
 
 5cc. Inspect import to amazon_fees_and_proceeds_july_2024 table
 SELECT *
-FROM public.amazon_fees_and_proceeds_july_2024;
+FROM amazon_fees_and_proceeds_july_2024;
 
 5da. Create amazon_orders_july_2024 table 
 CREATE TABLE amazon_orders_july_2024 (
@@ -198,13 +207,13 @@ CREATE TABLE amazon_orders_july_2024 (
 );
 
 5db. Populate amazon_orders_july_2024 table
-COPY public.amazon_orders_july_2024
+COPY amazon_orders_july_2024
 FROM 'C:\Users\Public\amazon_orders_july_2024.csv'
 CSV HEADER;
 
 5dc. Inspect import to amazon_orders_july_2024 table
 SELECT *
-FROM public.amazon_orders_july_2024;
+FROM amazon_orders_july_2024;
 
 5ea. Create amazon_daily_sales_july_2024 table
 CREATE TABLE amazon_daily_sales_july_2024 (
@@ -215,10 +224,10 @@ CREATE TABLE amazon_daily_sales_july_2024 (
 );
 
 5eb. Populate amazon_daily_sales_july_2024 table
-COPY public.amazon_daily_sales_july_2024
+COPY amazon_daily_sales_july_2024
 FROM 'C:\Users\Public\amazon_daily_sales_july_2024.csv'
 CSV HEADER;
 
 5ec. Inspect import to amazon_daily_sales_july_2024 table
 SELECT *
-FROM public.amazon_daily_sales_july_2024;
+FROM amazon_daily_sales_july_2024;
