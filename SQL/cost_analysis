@@ -35,7 +35,7 @@ Table of contents
 Report
 1. Business task: Compare and contrast cost of using Amazon vs. eBay as selling platforms using July 2024 sales as a sample
 
-2. Analysis
+2. Analysis:
 2a. Calculate selling fees as a percentage of total sales for each platform
 -- Amazon
 SELECT (SUM(refferal_fee_total) / (SUM(refferal_fee_total) + SUM(net_proceeds_total))) * 100
@@ -161,7 +161,7 @@ WHERE months_up IN
 	(SELECT MAX(months_up)
 	FROM insertion_fee_total);
 
-5. Appendix
+5. Appendix:
 5aa. Create ebay_all_listings_08_15_2024 table
 CREATE TABLE ebay_all_listings_08_15_2024 (
 	title text,
