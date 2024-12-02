@@ -1,0 +1,20 @@
+CREATE TABLE otdr_report_11122024_to_11252024 (
+	order_id text,
+	sku text,
+	unit_count text,
+	order_date text,
+	promised_ship_date text,
+	ship_confirmation_date text,
+	carrier_first_scan_date text,
+	promised_delivery_date_without_a_promise_extension text,
+	promised_delivery_date_with_a_promise_extension text,
+	actual_delivery_date text,
+	carrier_name text
+);
+
+COPY otdr_report_11122024_to_11252024
+FROM 'C:\Users\Public\OTDR_Report_11-12-2024_to_11-25-2024.csv'
+CSV HEADER;
+
+SELECT *
+FROM otdr_report_11122024_to_11252024;
