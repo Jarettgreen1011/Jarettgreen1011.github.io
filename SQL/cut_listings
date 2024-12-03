@@ -69,11 +69,12 @@ CSV HEADER;
 SELECT *
 FROM listings_report_12032024;
 
+had to reasjust pricing because some items that had sold cheaply previously are currently above the 12.99 threshold of current analysis 
 SELECT sku, listings.asin, listings.item_name, listings.price, COUNT(sku) AS times_ordered, SUM(quantity_purchased) AS quantity_purchased
 FROM (SELECT *
 	FROM orders_past_90_days_12032024 
 	WHERE item_price < 12.99 AND item_price > 0) AS orders
 LEFT JOIN listings_report_12032024 AS listings ON orders.sku = listings.seller_sku
 GROUP BY sku, listings.asin, listings.item_name, listings.price
+HAVING listings.price < 12.99
 ORDER BY COUNT(sku) DESC, SUM(quantity_purchased) DESC, listings.price DESC;
-
