@@ -1,3 +1,5 @@
+identify top selling items before making purchase with shawmut/mersen seller
+
 SELECT sku, listings.asin, listings.item_name, listings.price, COUNT(sku) AS times_ordered, SUM(quantity_purchased) AS quantity_purchased
 FROM (SELECT *
 	FROM orders_past_90_days_12032024 
