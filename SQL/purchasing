@@ -1,0 +1,8 @@
+SELECT sku, listings.asin, listings.item_name, listings.price, COUNT(sku) AS times_ordered, SUM(quantity_purchased) AS quantity_purchased
+FROM (SELECT *
+	FROM orders_past_90_days_12032024 
+	WHERE LOWER(product_name) LIKE LOWER ('%Shawmut%')
+OR LOWER(product_name) LIKE LOWER ('%Mersen%')) AS orders
+LEFT JOIN listings_report_12032024 AS listings ON orders.sku = listings.seller_sku
+GROUP BY sku, listings.asin, listings.item_name, listings.price
+ORDER BY COUNT(sku) DESC, SUM(quantity_purchased) DESC, listings.price DESC;
