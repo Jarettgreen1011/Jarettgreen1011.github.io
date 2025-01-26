@@ -88,7 +88,7 @@ ORDER BY COUNT(buyer_state) DESC;
 global_fuses_all_listings_report - average price of our listings / bar chart with number of listings between metrics
 
 
-global_fuses_item_sales - correlation between buy box percentage and number of sales, 
+global_fuses_item_sales - correlation between buy box percentage and number of sales among items with a high quantity and similar sales rank (more data required), 
 
 multiple purchases per order looking at which ads have the largest differences between units ordered and total order items,
   
