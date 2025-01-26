@@ -1,0 +1,145 @@
+1.0 cleaning
+1.1 CLEAN ORDERS BY STATE DATA FOR GLOBAL FUSES AND SECURE COUNT
+WITH ship_state_clean AS
+(SELECT amazon_order_id, UPPER(ship_state) AS ship_state,
+CASE UPPER(ship_state) 
+	WHEN 'ALABAMA' THEN 'AL' 
+	WHEN 'ALASKA' THEN 'AK'
+	WHEN 'ARIZONA' THEN 'AZ' 
+	WHEN 'ARKANSAS' THEN 'AR'  
+  WHEN 'CALIFORNIA' THEN 'CA'
+	WHEN 'COLORADO' THEN 'CO'
+	WHEN 'CONNECTICUT' THEN 'CT'
+	WHEN 'DELAWARE' THEN 'DE'
+	WHEN 'DISTRICT OF COLUMBIA' THEN 'DC'
+	WHEN 'FLORIDA' THEN 'FL'
+	WHEN 'GEORGIA' THEN 'GA'
+	WHEN 'HAWAII' THEN 'HI'
+	WHEN 'IDAHO' THEN 'ID'
+	WHEN 'ILLINOIS' THEN 'IL'
+	WHEN 'INDIANA' THEN 'IN' 
+	WHEN 'IOWA' THEN 'IA' 
+	WHEN 'KANSAS' THEN 'KS' 
+	WHEN 'KENTUCKY' THEN 'KY' 
+	WHEN 'LOUISIANA' THEN 'LA'
+	WHEN 'MAINE' THEN 'ME' 
+	WHEN 'MARYLAND' THEN 'MD' 
+	WHEN 'MASSACHUSETTS' THEN 'MA'
+	WHEN 'MICHIGAN' THEN 'MI' 
+	WHEN 'MINNESOTA' THEN 'MN'
+	WHEN 'MISSISSIPPI' THEN 'MS'
+	WHEN 'MISSOURI' THEN 'MO'
+	WHEN 'MONTANA' THEN 'MT' 
+	WHEN 'NEBRASKA' THEN 'NE' 
+	WHEN 'NEVADA' THEN 'NV' 
+	WHEN 'NEW HAMPSHIRE' THEN 'NH'
+	WHEN 'NEW JERSEY' THEN 'NJ' 
+	WHEN 'NEW MEXICO' THEN 'NM' 
+	WHEN 'NEW YORK' THEN 'NY' 
+	WHEN 'NORTH CAROLINA' THEN 'NC' 
+	WHEN 'NORTH DAKOTA' THEN 'ND' 
+	WHEN 'OHIO' THEN 'OH' 
+	WHEN 'OKLAHOMA' THEN 'OK' 
+	WHEN 'OREGON' THEN 'OR' 
+	WHEN 'PENNSYLVANIA' THEN 'PA'
+	WHEN 'RHODE ISLAND' THEN 'RI' 
+	WHEN 'SOUTH CAROLINA' THEN 'SC' 
+	WHEN 'SOUTH DAKOTA' THEN 'SD' 
+	WHEN 'TENNESSEE' THEN 'TN'
+	WHEN 'TEXAS' THEN 'TX' 
+	WHEN 'UTAH' THEN 'UT' 
+	WHEN 'VERMONT' THEN 'VT' 
+	WHEN 'VIRGINIA' THEN 'VA' 
+	WHEN 'WASHINGTON' THEN 'WA' 
+	WHEN 'WEST VIRGINIA' THEN 'WV' 
+	WHEN 'WISCONSIN' THEN 'WI' 
+	WHEN 'WYOMING' THEN 'WY'
+	WHEN 'PUERTO RICO' THEN 'PR'
+	WHEN 'CA.' THEN 'CA'
+	WHEN 'N.Y.' THEN 'NY'
+	WHEN 'N.C.' THEN 'NC'
+	WHEN 'MI.' THEN 'MI'
+	WHEN 'N.J.' THEN 'NJ'
+	ELSE UPPER(ship_state)
+END AS ship_state_cleaned
+FROM global_fuses_orders
+GROUP BY ship_state, amazon_order_id)
+
+SELECT ship_state_cleaned, COUNT(ship_state_cleaned)
+FROM ship_state_clean
+GROUP BY ship_state_cleaned
+ORDER BY COUNT(ship_state_cleaned) DESC;
+
+1.2 CLEAN ORDERS BY STATE DATA FOR THE PART CRIB AND SECURE COUNT
+SELECT UPPER(buyer_state), COUNT(buyer_state)
+FROM part_crib_orders
+GROUP BY UPPER(buyer_state), buyer_country
+HAVING buyer_country = 'United States'
+ORDER BY COUNT(buyer_state) DESC;
+
+1.3 CLEAN ORDERS BY STATE DATA FOR INDUSTRIAL SUPERSTORE AND SECURE COUNT
+SELECT UPPER(buyer_state), COUNT(buyer_state)
+FROM industrial_superstore_orders
+GROUP BY UPPER(buyer_state), buyer_country
+HAVING buyer_country = 'United States'
+ORDER BY COUNT(buyer_state) DESC;
+
+2.0 analyzing amazon
+global_fuses_all_listings_report - average price of our listings / bar chart with number of listings between metrics
+
+
+global_fuses_item_sales - correlation between buy box percentage and number of sales, 
+
+multiple purchases per order looking at which ads have the largest differences between units ordered and total order items,
+  
+top selling items joined with all_listings_report to show current price 
+
+global_fuses_orders - map of all sales
+
+
+global_fuses_sales_by_day - average sale per order 
+
+average number of units ordered
+
+average price per unit
+
+average sales per day per month
+
+3.0 analyzing ebay
+
+4.0 comparing amazon and ebay
+
+NOTES TO LOOK INTO
+GLOBAL FUSES
+global_fuses_all_listings_report - average price of our listings / bar chart with number of listings between metrics
+
+global_fuses_item_sales - correlation between buy box percentage and number of sales, multiple purchases per order looking at which ads have the largest differences between units ordered and total order items,
+  top selling items joined with all_listings_report to show current price 
+
+global_fuses_monthly_sales - sales per month chart comparing between amazon and ebay
+
+global_fuses_orders - map of all sales
+
+global_fuses_sales_by_day - average sale per order, average number of units ordered, average price per unit, average sales per day per month
+
+
+EBAY
+ebay_combined_monthly_sales - sales per month chart comparing between amazon and ebay
+
+industrial_superstore_listings_sales_report - top selling items
+
+part_crib_listings_sales_report - top selling items
+
+industrial_superstore_orders - map of states who made purchases, list of top buyers per unique order id, average sale per order
+
+part_crib_orders - map of states who made purchases, list of top buyers per unique order id, average sale per order
+
+
+
+
+
+
+
+
+
+
