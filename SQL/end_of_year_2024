@@ -1,5 +1,5 @@
 1.0 comparing amazon and ebay
-sales per month chart comparing between amazon and ebay
+COMPLETED - sales per month chart comparing between amazon and ebay
 SELECT EXTRACT(MONTH FROM e.date) AS month, e.part_crib_ordered_product_sales, e.industrial_superstore_ordered_product_sales, 
 (e.part_crib_ordered_product_sales + e.industrial_superstore_ordered_product_sales)::numeric AS ebay_combined, 
 a.ordered_product_sales AS global_fuses_ordered_product_sales,
@@ -22,40 +22,27 @@ LEFT JOIN global_fuses_monthly_sales AS a ON e.date = a.date;
 
 
 2.0 analyzing amazon
-global_fuses_all_listings_report - average price of our listings / bar chart with number of listings between metrics
+UNCOMPLETE - global_fuses_all_listings_report - average price of our listings / bar chart with number of listings between metrics
 SELECT price
 FROM public.global_fuses_all_listings_report;
 
 
-global_fuses_item_sales - correlation between buy box percentage and number of sales among items with a high quantity and similar sales rank (more data required), CONTROL FOR SALES RANK 
-SELECT price_category, corr(buy_box_percentage, units_ordered) AS box_corr, COUNT(price_category)
-FROM (SELECT i_s.title, i_s.buy_box_percentage, i_s.units_ordered, alr.price::numeric,
-CASE WHEN alr.price BETWEEN 0.00 AND 4.99 THEN 0
-	WHEN alr.price BETWEEN 5.00 AND 9.99 THEN 1
-	WHEN alr.price BETWEEN 10.00 AND 14.99 THEN 2
-	WHEN alr.price BETWEEN 15.00 AND 19.99 THEN 3
-	ELSE NULL
-END AS price_category
-FROM global_fuses_item_sales AS i_s
-LEFT JOIN global_fuses_all_listings_report AS alr ON i_s.asin = alr.asin
-WHERE alr.quantity > 49
-AND alr.price < 20.00)
-GROUP BY price_category
-ORDER BY price_category;
-
-multiple purchases per order looking at which ads have the largest differences between units ordered and total order items,
-SELECT title, units_ordered, total_order_items, (units_ordered - total_order_items) AS units_vs_orders
+COMPLETED - multiple purchases per order looking at which ads have the largest differences between units ordered and total order items,
+SELECT title, units_ordered, total_order_items,  (units_ordered::numeric / total_order_items::numeric) AS avg_units_per_order
 FROM public.global_fuses_item_sales
-ORDER BY units_vs_orders DESC;
+WHERE total_order_items > 9
+ORDER BY avg_units_per_order DESC;
 
-top selling items joined with all_listings_report to show current price 
+
+COMPLETED - top selling items joined with all_listings_report to show current price 
 SELECT title, units_ordered, ordered_product_sales, alr.price AS current_price
 FROM global_fuses_item_sales AS i_s
 LEFT JOIN global_fuses_all_listings_report AS alr ON i_s.asin = alr.asin
-ORDER BY ordered_product_sales DESC;
+ORDER BY ordered_product_sales DESC
+LIMIT 50;
 
 
-global_fuses_orders - map of all sales
+COMPLETED - global_fuses_orders - map of all sales
 WITH ship_state_clean AS
 (SELECT amazon_order_id, UPPER(ship_state) AS ship_state,
 CASE UPPER(ship_state) 
@@ -126,37 +113,56 @@ FROM ship_state_clean
 GROUP BY ship_state_cleaned
 ORDER BY COUNT(ship_state_cleaned) DESC;
 
-
-global_fuses_sales_by_day - average sale per order 
-SELECT AVG(average_sales_per_order_item)
-FROM global_fuses_sales_by_day;
-
-average number of orders per day per month
-
-average sales per day per month
+`
+COMPLETED - global_fuses_sales_by_day - average sale per order per month, average number of orders per day per month, total sales per month
+SELECT EXTRACT(MONTH FROM date) AS month, 
+ROUND(AVG(average_sales_per_order_item)::numeric, 2) AS avg_sales_per_order, 
+ROUND((SUM(ordered_product_sales::numeric) / COUNT(*)), 2) AS avg_sales_per_day,
+ROUND((SUM(units_ordered::numeric) / COUNT(*)), 2) AS avg_orders_per_day,
+ROUND(SUM(ordered_product_sales::numeric), 2) AS total_sales,
+CASE WHEN EXTRACT(MONTH FROM date) = 1 THEN 'January'
+	WHEN EXTRACT(MONTH FROM date) = 2 THEN 'February'
+	WHEN EXTRACT(MONTH FROM date) = 3 THEN 'March'
+	WHEN EXTRACT(MONTH FROM date) = 4 THEN 'April'
+	WHEN EXTRACT(MONTH FROM date) = 5 THEN 'May'
+	WHEN EXTRACT(MONTH FROM date) = 6 THEN 'June'
+	WHEN EXTRACT(MONTH FROM date) = 7 THEN 'July'
+	WHEN EXTRACT(MONTH FROM date) = 8 THEN 'August'
+	WHEN EXTRACT(MONTH FROM date) = 9 THEN 'September'
+	WHEN EXTRACT(MONTH FROM date) = 10 THEN 'October'
+	WHEN EXTRACT(MONTH FROM date) = 11 THEN 'November'
+	WHEN EXTRACT(MONTH FROM date) = 12 THEN 'December'
+	ELSE null
+END AS month_converted
+FROM global_fuses_sales_by_day
+GROUP BY month_converted, month
+ORDER BY month;
 
 
 2.0 analyzing ebay
-part_crib_listings_sales_report - top selling items
+COMPLETE - part_crib_listings_sales_report - 50 top selling items
 SELECT *
 FROM part_crib_listings_sales_report
-ORDER BY item_sales DESC;
+ORDER BY item_sales DESC
+LIMIT 50;
 
 
-industrial_superstore_listings_sales_report - top selling items
+COMPLETE - industrial_superstore_listings_sales_report - top selling items
 SELECT *
 FROM industrial_superstore_listings_sales_report
-ORDER BY item_sales DESC;
+ORDER BY item_sales DESC
+LIMIT 50;
 
 
-part_crib_orders - map of states who made purchases 
+COMPLETE - part_crib_orders - map of states who made purchases 
 SELECT UPPER(buyer_state), COUNT(buyer_state)
 FROM part_crib_orders
 GROUP BY UPPER(buyer_state), buyer_country
 HAVING buyer_country = 'United States'
 ORDER BY COUNT(buyer_state) DESC;
 
-list of top buyers per unique order id
+
+COMPLETE - list of top buyers per unique order id
 WITH usernames AS
 (SELECT DISTINCT order_number, buyer_username, total_price
 FROM part_crib_orders)
@@ -164,20 +170,16 @@ FROM part_crib_orders)
 SELECT buyer_username, COUNT(buyer_username) AS orders, ROUND( SUM(total_price)::numeric, 2) as total
 FROM usernames
 GROUP BY buyer_username
-ORDER BY COUNT(buyer_username) DESC;
+ORDER BY COUNT(buyer_username) DESC
+LIMIT 10;
 
-average sale per order
-SELECT AVG(total_price)
+
+COMPLETE - average sale per order - part crib
+SELECT ROUND(AVG(total_price::numeric), 2)
 FROM part_crib_orders;
 
-industrial_superstore_orders - map of states who made purchases
-SELECT UPPER(buyer_state), COUNT(buyer_state)
-FROM industrial_superstore_orders
-GROUP BY UPPER(buyer_state), buyer_country
-HAVING buyer_country = 'United States'
-ORDER BY COUNT(buyer_state) DESC;
 
-list of top buyers per unique order id
+COMPLETE - list of top buyers per unique order id
 WITH usernames AS
 (SELECT DISTINCT order_number, buyer_username, total_price
 FROM industrial_superstore_orders)
@@ -185,44 +187,9 @@ FROM industrial_superstore_orders)
 SELECT buyer_username, COUNT(buyer_username) AS orders, ROUND( SUM(total_price)::numeric, 2) as total
 FROM usernames
 GROUP BY buyer_username
-ORDER BY COUNT(buyer_username) DESC;
+ORDER BY COUNT(buyer_username) DESC
+LIMIT 10;
 
-average sale per order
-SELECT AVG(total_price)
+COMPLETE - average sale per order
+SELECT ROUND(AVG(total_price::numeric), 2)
 FROM industrial_superstore_orders;
-
-
-
-
-
-
-NOTES TO LOOK INTO
-GLOBAL FUSES
-global_fuses_all_listings_report - average price of our listings / bar chart with number of listings between metrics
-
-global_fuses_item_sales - correlation between buy box percentage and number of sales, multiple purchases per order looking at which ads have the largest differences between units ordered and total order items,
-  top selling items joined with all_listings_report to show current price 
-
-global_fuses_orders - map of all sales
-
-global_fuses_sales_by_day - average sale per order, average number of units ordered, average price per unit, average sales per day per month
-
-
-EBAY
-industrial_superstore_listings_sales_report - top selling items
-
-part_crib_listings_sales_report - top selling items
-
-industrial_superstore_orders - map of states who made purchases, list of top buyers per unique order id, average sale per order
-
-part_crib_orders - map of states who made purchases, list of top buyers per unique order id, average sale per order
-
-
-
-
-
-
-
-
-
-
