@@ -22,11 +22,6 @@ LEFT JOIN global_fuses_monthly_sales AS a ON e.date = a.date;
 
 
 2.0 analyzing amazon
-INCOMPLETE - global_fuses_all_listings_report - average price of our listings / bar chart with number of listings between metrics
-SELECT price
-FROM public.global_fuses_all_listings_report;
-
-
 		COMPLETED - multiple purchases per order looking at which ads have the largest differences between units ordered and total order items,
 SELECT title, units_ordered, total_order_items,  ROUND((units_ordered::numeric / total_order_items::numeric), 2) AS avg_units_per_order
 FROM public.global_fuses_item_sales
@@ -46,7 +41,7 @@ AND ROUND((units_ordered::numeric / total_order_items::numeric), 2) < 2
 ORDER BY avg_units_per_order;
 
 
-		COMPLETED - top selling items joined with all_listings_report to show current price 
+		INCOMPLETE - top selling items joined with all_listings_report to show current price , REMOVE DUPLICATE
 SELECT title, units_ordered, ordered_product_sales, alr.price AS current_price
 FROM global_fuses_item_sales AS i_s
 LEFT JOIN global_fuses_all_listings_report AS alr ON i_s.asin = alr.asin
