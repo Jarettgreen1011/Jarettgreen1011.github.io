@@ -199,7 +199,7 @@ GROUP BY buyer_username
 ORDER BY COUNT(buyer_username) DESC
 LIMIT 10;
 
-COMPLETE - summary - industrial superstore
+		COMPLETE - summary - industrial superstore
 SELECT ROUND(AVG(total_price::numeric), 2) AS avg_sale_per_order, 
 COUNT (DISTINCT order_number) AS total_orders,
 ROUND(SUM(total_price::numeric), 2) AS total_sales
