@@ -23,21 +23,26 @@ LEFT JOIN global_fuses_monthly_sales AS a ON e.date = a.date;
 
 2.0 analyzing amazon
 		COMPLETED - multiple purchases per order looking at which ads have the largest differences between units ordered and total order items,
-SELECT title, units_ordered, total_order_items,  ROUND((units_ordered::numeric / total_order_items::numeric), 2) AS avg_units_per_order
-FROM public.global_fuses_item_sales
+SELECT title, i_s.asin, ROUND(alr.price::numeric, 2) AS price, units_ordered, total_order_items,  
+ROUND((units_ordered::numeric / total_order_items::numeric), 2) AS avg_units_per_order
+FROM public.global_fuses_item_sales AS i_s
+LEFT JOIN global_fuses_all_listings_report AS alr ON i_s.asin = alr.asin
 WHERE total_order_items > 9
-ORDER BY avg_units_per_order DESC
-LIMIT 10;
+ORDER BY avg_units_per_order DESC;
 
 		COMPLETED lowest units per order 
-SELECT title, asin, units_ordered, total_order_items,  ROUND((units_ordered::numeric / total_order_items::numeric), 2) AS avg_units_per_order
-FROM public.global_fuses_item_sales
+SELECT title, i_s.asin, ROUND(alr.price::numeric, 2) AS price, 
+units_ordered, total_order_items,  
+ROUND((units_ordered::numeric / total_order_items::numeric), 2) AS avg_units_per_order
+FROM public.global_fuses_item_sales AS i_s
+LEFT JOIN global_fuses_all_listings_report AS alr ON i_s.asin = alr.asin
 WHERE total_order_items > 9
 AND LOWER(title) NOT LIKE '%pack%'
 AND LOWER(title) NOT LIKE'%pk%'
 AND LOWER(title) NOT LIKE '%box%'
 AND LOWER(title) NOT LIKE '%lot%'
 AND ROUND((units_ordered::numeric / total_order_items::numeric), 2) < 2
+AND alr.price < 20.00
 ORDER BY avg_units_per_order;
 
 
